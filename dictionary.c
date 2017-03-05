@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <ctype.h>
 
 #include "dictionary.h"
 
@@ -16,6 +17,8 @@
 char **dict_load = NULL;   // global variable
 char **marque_page = NULL;   // global variable. It is a pointer to the word I want to compare.
 int lettre = 0;   // global variable to indicate the index of the letter. At first equal to zero.
+int dict_size = 0;   // Dictionary size
+
 
 /**
  * New function that compares two words
@@ -23,20 +26,46 @@ int lettre = 0;   // global variable to indicate the index of the letter. At fir
 enum gps compare(char* word1, const char* word2)   // NOTE: word2 is the word I am looking for. word1 is the dictionary word
     {
         int i = 0;
+        int j = 0;
+        char *w1 = strdup(word1);   // I duplicate word1
+        char *w2 = strdup(word2);    // I duplicate word2
         
-        if (marque_page[0] == NULL)
-            return (AFTER);
-        
-        while (word1[i] != '\0' && word2[i] != '\0')   // Until we are not at the end of the words (word1 and word2)
+        while (w1[j] != '\0')
         {
-            if (word1[i] != word2[i])   // if letters in word1 and word2 are not the same, break
+            w1[j] = tolower(w1[j]);   // This is to lower each letter in w1
+            j++;
+        }
+        
+        j = 0;
+        while (w2[j] != '\0')
+        {
+            w2[j] = tolower(w2[j]);   // This is to lower each letter in w2
+            j++;
+        }
+
+
+        while (w1[i] != '\0' && w2[i] != '\0')   // Until we are not at the end of the words (word1 and word2)
+        {
+            if (w1[i] != w2[i])   // if letters in word1 and word2 are not the same, break
                 break;
             i++;
         }
-        if (word1[i] > word2[i])
+        if (w1[i] > w2[i])
+        {
+            free(w1);
+            free(w2);
             return(AFTER);
-        else if(word1[i] < word2[i])
+        }
+
+        else if(w1[i] < w2[i])
+        {
+            free(w1);
+            free(w2);
             return(BEFORE);
+        }
+
+        free(w1);
+        free(w2);
         return(EQUAL);
     }
 
@@ -47,73 +76,19 @@ enum gps compare(char* word1, const char* word2)   // NOTE: word2 is the word I 
 bool check(const char *word)
 {
     // TODO
-    enum gps resultat;
+    int i = 0;
     
     //printf("Check letter %d in dict %s for %s\n", lettre, marque_page[0], word);
-    
-    resultat = compare(marque_page[0], word); // I'll compare the marque-page (bookmark) and the word provide as argument
-    if (resultat == EQUAL)
+    while (i < dict_size && compare(dict_load[i], word) == BEFORE)   // Recall: word est une char* et marque_page est un char**
         {
-            //printf("EQUAL\n");
-            marque_page = dict_load;   // For the next word, I must return marque-page (bookmard) to the beginning
-            lettre = 0;
-            return(true);   // Si mon resultat est EQUAL alors cela veut dire que le mot est bien ecrit   
+            i++;   // marque_page-0 is where I am, marque-page-1 is the next word
         }
-    else if (resultat == AFTER)
-        {
-            //printf("AFTER\n");
-            marque_page = dict_load;   // Pour le prochain mot il va falloir retourner le marque-page au debut
-            lettre = 0;
-            return(false);
-        }
-        
-    // sinon il faut remettre notre marque-page et rappeler la fonction
-    else
-    {
-        //printf("BEFORE\n");
-       // int i = lettre;
-        
-        while (marque_page[0] != NULL && compare(marque_page[0], word) == BEFORE)   // Recall: word est une char* et marque_page est un char**
-        {
-            marque_page = &marque_page[1];   // marque_page-0 est le mot ou je suis, marque-page-1 c'est le prochain mot
-        }
-        lettre = lettre + 1;   // C'est la seule partie que va changer une fois que j'ai verifier chaque lettre
-        bool res = check(word);
-        return(res);
-    }
-}
 
-
-/**
- * New function: my_recursif_load
- * I only want to know how big is malloc at the end of my_recusifload
- */
-
-void my_recursif_load(FILE *fd, int i)
-    {
-        char word[67] = "";
-        
-        // fscanf returns the number of items found
-        // if fscanf returns 0 number of items found, then 
-        if (fscanf(fd, "%s\n", word) == EOF)
-        {
-            dict_load = malloc(sizeof(char *) * (i+1));   // Once I found my last word, I want to set the malloc 
-            // i + 1: it is to take into consideration the end of the word -> '\0'
-            
-            dict_load[i] = NULL;   // Since it is char** it is not zero or '\0', it is NULL to notify the end of the word 
-        }
+        if (i < dict_size && compare(dict_load[i], word) == EQUAL)
+            return(true);
         else
-        {
-            //printf("%s\n", word);
-            // si scanf equals 1. It means that I have found a word
-            my_recursif_load(fd, i+1);   // my_recursif_load has to store the word in dict_load
-            dict_load[i] = strdup(word);   // Function that takes a copy of string and stores a malloc-copy.
-            //printf("Dict[%i] = %s\n", i, word);
-            // Thus, it returns a pointer to that copy.
-            // NOTE: Inside strdup malloc is used. Thus, free it at the end.
-        }
-        
-    }
+            return(false);
+}
 
 
 
@@ -125,10 +100,24 @@ bool load(const char *dictionary)
     // TODO
     // fread my dictionary  and store it in a char** or in a linked list
     FILE *fd;   // fd is my dictionary file.
-    fd = fopen (dictionary, "r");   // fopen returns an FILE * et ce ca que 
+    fd = fopen (dictionary, "r");   // fopen returns an FILE * 
     if (fd == NULL)
-        printf("Noooooonn\n");
-    my_recursif_load(fd, 0);
+        printf("Noooooonn. I cannot open the file!\n");
+    
+    
+    char word[47] = "";  // The longest word plus 1
+    int i = 0;
+    while (fscanf(fd, "%s\n", word) != EOF)   // Keep readin until the end of the file
+    {
+        dict_load = realloc(dict_load, sizeof(char*) * (i+1));     // Once I found my last word, I want to set the malloc 
+            // i + 1: it is to take into consideration the end of the word -> '\0'
+
+        dict_load[i] = strdup(word);   // Function that takes a copy of string and stores a malloc-copy.
+        i++;
+    }
+    
+    dict_size = i;
+    //my_recursif_load(fd, 0);
     fclose(fd);
     marque_page = dict_load;   // On met le marque page au debut du dictionnaire
     
