@@ -1,0 +1,12 @@
+Answer-0) Pneumonoultramicroscopicsilicovolcanoconiosis [...] is an English word that refers to a lung disease that is otherwise known as silicosis. 
+It is the longest word in the English language published in a dictionary, the Oxford English Dictionary, which 
+defines it as "an artificial long word said to mean a lung disease caused by inhaling very fine ash and 
+sand dust."
+Source-0) https://en.wikipedia.org/wiki/Pneumonoultramicroscopicsilicovolcanoconiosis
+
+1.  According to man,  getrusage returns 
+2.  TODO
+3.  TODO
+4.  TODO
+5.  TODO
+6.  TODO
